@@ -130,3 +130,6 @@ dmypy.json
 
 # PyCharm
 .idea
+
+# help file with commands
+commands_help.txt
