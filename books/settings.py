@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+from secrets import SECRET_SOCIAL_AUTH_GITHUB_SECRET, SECRET_SOCIAL_AUTH_GITHUB_KEY
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -149,3 +151,6 @@ REST_FRAMEWORK = {
 SOCIAL_AUTH_JSONFIELD_ENABLED = True
 
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
+
+SOCIAL_AUTH_GITHUB_KEY = SECRET_SOCIAL_AUTH_GITHUB_KEY
+SOCIAL_AUTH_GITHUB_SECRET = SECRET_SOCIAL_AUTH_GITHUB_SECRET

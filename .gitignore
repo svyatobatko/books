@@ -133,3 +133,6 @@ dmypy.json
 
 # help file with commands
 commands_help.txt
+
+# secrets key
+secrets.py
