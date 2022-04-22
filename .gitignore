@@ -135,4 +135,4 @@ dmypy.json
 commands_help.txt
 
 # secrets key
-secrets.py
+django_hidden_info.py
