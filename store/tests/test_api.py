@@ -15,9 +15,10 @@ class BooksAPITestCase(APITestCase):
     def setUp(self):
         # Set up non-modified objects used by all test methods
         self.user = User.objects.create(username='test_username')
-        self.book_1 = Book.objects.create(name='First one', price='10.99', author_name='Li')
-        self.book_2 = Book.objects.create(name='Second book', price='39.99', author_name='John')
-        self.book_3 = Book.objects.create(name='Ho was John', price='25.99', author_name='Mary')
+        self.user_admin = User.objects.create_superuser(username='admin_username')
+        self.book_1 = Book.objects.create(name='First one', price='10.99', author_name='Li', owner=None)
+        self.book_2 = Book.objects.create(name='Second book', price='39.99', author_name='John', owner=self.user)
+        self.book_3 = Book.objects.create(name='Ho was John', price='25.99', author_name='Mary', owner=None)
 
     def test_get(self):
         url = reverse('book-list')
@@ -75,6 +76,7 @@ class BooksAPITestCase(APITestCase):
             "id": self.book_1.id,
             "name": self.book_1.name,
             "price": self.book_1.price,
+            "owner": None,
             "author_name": self.book_1.author_name
         }
         self.assertEquals(status.HTTP_200_OK, response.status_code)
@@ -88,8 +90,12 @@ class BooksAPITestCase(APITestCase):
             "author_name": "Martin"
         }
         json_data = json.dumps(data)
-        response = self.client.post(url, data=json_data, content_type='application/json')
-        self.assertEquals(status.HTTP_403_FORBIDDEN, response.status_code)
+        with self.assertRaises(ValueError) as context:
+            self.client.post(url, data=json_data, content_type='application/json')
+
+        error_msg = '"Book.owner" must be a "User" instance.'
+        self.assertRaises(ValueError)
+        self.assertIn(error_msg, str(context.exception))
 
     def test_create_with_not_correct_field(self):
         self.assertEquals(3, Book.objects.all().count())
@@ -120,8 +126,9 @@ class BooksAPITestCase(APITestCase):
         response = self.client.post(url, data=json_data, content_type='application/json')
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
         self.assertEquals(4, Book.objects.all().count())
+        self.assertEquals(self.user, Book.objects.last().owner)
 
-    def test_update(self):
+    def test_update_not_owner(self):
         url = reverse('book-detail', args=(self.book_1.id,))
         data = {
             "name": self.book_1.name,
@@ -131,14 +138,58 @@ class BooksAPITestCase(APITestCase):
         json_data = json.dumps(data)
         self.client.force_login(self.user)
         response = self.client.put(url, data=json_data, content_type='application/json')
-        self.assertEquals(status.HTTP_200_OK, response.status_code)
+        self.assertEquals(status.HTTP_403_FORBIDDEN, response.status_code)
         self.book_1.refresh_from_db()
-        self.assertEquals(Decimal('299.99'), self.book_1.price)
+        self.assertEquals(Decimal('10.99'), self.book_1.price)
 
-    def test_delete(self):
+    def test_update(self):
+        url = reverse('book-detail', args=(self.book_2.id,))
+        data = {
+            "name": self.book_2.name,
+            "price": "299.99",
+            "author_name": self.book_2.author_name
+        }
+        json_data = json.dumps(data)
+        self.client.force_login(self.user)
+        response = self.client.put(url, data=json_data, content_type='application/json')
+        self.assertEquals(status.HTTP_200_OK, response.status_code)
+        self.book_2.refresh_from_db()
+        self.assertEquals(Decimal('299.99'), self.book_2.price)
+
+    def test_update_not_owner_but_staff(self):
+        url = reverse('book-detail', args=(self.book_3.id,))
+        data = {
+            "name": self.book_3.name,
+            "price": "299.99",
+            "author_name": self.book_3.author_name
+        }
+        json_data = json.dumps(data)
+        self.client.force_login(self.user_admin)
+        response = self.client.put(url, data=json_data, content_type='application/json')
+        self.assertEquals(status.HTTP_200_OK, response.status_code)
+        self.book_3.refresh_from_db()
+        self.assertEquals(Decimal('299.99'), self.book_3.price)
+
+    def test_delete_not_owner(self):
         self.assertEquals(3, Book.objects.all().count())
         url = reverse('book-detail', args=(self.book_1.id,))
         self.client.force_login(self.user)
+        response = self.client.delete(url)
+        self.assertEquals(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEquals(3, Book.objects.all().count())
+
+    def test_delete(self):
+        self.assertEquals(3, Book.objects.all().count())
+        url = reverse('book-detail', args=(self.book_2.id,))
+        self.client.force_login(self.user)
+        response = self.client.delete(url)
+        self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
+        self.assertEquals(2, Book.objects.all().count())
+
+    def test_delete_not_owner_but_staff(self):
+        self.assertEquals(3, Book.objects.all().count())
+        url = reverse('book-detail', args=(self.book_3.id,))
+        self.client.force_login(self.user_admin)
         response = self.client.delete(url)
         self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertEquals(2, Book.objects.all().count())
