@@ -46,8 +46,8 @@ class BooksSerializerTestCase(TestCase):
         UserBookRelation.objects.create(user=user_2, book=book_2, like=True, rate=4)
         UserBookRelation.objects.create(user=user_3, book=book_2, like=False)
 
-        books = Book.objects.all().annotate(annotated_likes_count=Count(Case(When(userbookrelation__like=True,
-                                                                                  then=1))),
+        books = Book.objects.all().annotate(likes_count=Count(Case(When(userbookrelation__like=True,
+                                                                        then=1))),
                                             rating=Avg('userbookrelation__rate')
                                             ).order_by('id')
         serialized_data = BookSerializer(books, many=True).data
@@ -57,7 +57,7 @@ class BooksSerializerTestCase(TestCase):
                 'name': 'First one',
                 'author_name': 'Li',
                 'price': '10.99',
-                'annotated_likes_count': 3,
+                'likes_count': 3,
                 'rating': '4.67',
                 'owner_name': 'test_user1',
                 'readers': [
@@ -71,7 +71,7 @@ class BooksSerializerTestCase(TestCase):
                 'name': 'Second book',
                 'author_name': 'John',
                 'price': '19.99',
-                'annotated_likes_count': 2,
+                'likes_count': 2,
                 'rating': '3.50',
                 'owner_name': '',
                 'readers': [
