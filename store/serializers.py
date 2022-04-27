@@ -14,7 +14,7 @@ class BookReaderSerializer(ModelSerializer):
 class BookSerializer(ModelSerializer):
     likes_count = serializers.IntegerField(read_only=True)
     rating = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
-    owner_name = serializers.CharField(source='owner.username', default='', read_only=True)
+    owner_name = serializers.CharField(default='', read_only=True)
     readers = BookReaderSerializer(many=True, read_only=True)
 
     class Meta:
