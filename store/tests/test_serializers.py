@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.db.models import Count, Case, When, Avg, F
+from django.db.models import Count, Case, When, F
 from django.test import TestCase
 
 from store.models import Book, UserBookRelation
@@ -17,6 +17,7 @@ class BooksSerializerTestCase(TestCase):
                 'name': 'First one',
                 'author_name': 'Li',
                 'price': '10.99',
+                'rating': None,
                 'owner_name': '',
                 'readers': []
             },
@@ -25,6 +26,7 @@ class BooksSerializerTestCase(TestCase):
                 'name': 'Second book',
                 'author_name': 'John',
                 'price': '19.99',
+                'rating': None,
                 'owner_name': '',
                 'readers': []
             },
@@ -48,7 +50,6 @@ class BooksSerializerTestCase(TestCase):
 
         books = Book.objects.all().annotate(likes_count=Count(Case(When(userbookrelation__like=True,
                                                                         then=1))),
-                                            rating=Avg('userbookrelation__rate'),
                                             owner_name=F('owner__username'),
                                             ).order_by('id')
         serialized_data = BookSerializer(books, many=True).data
